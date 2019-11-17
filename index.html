@@ -1,0 +1,113 @@
+<html>
+<head>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script type="text/javascript">
+var data = localStorage.getItem("myData");
+var dataObject, amount, currency, description;
+
+if (data != null) //There's stored data
+{
+  dataObject = JSON.parse(data);
+  amount = dataObject.amount;
+  currency = dataObject.currency;
+  description = dataObject.description;
+  localStorage.removeItem("myData"); //Remove data, otherwise it'll be there for a long time.
+}
+
+$(document).ready(function(){
+   
+    $.ajax({
+      type: "POST",
+      url: "http://localhost:8020/pay/checkout/",
+      data: {
+        "amount": "250",
+        "currency": "USD",
+        "description": "description"
+      },       
+      success: function(data){
+        var options = {
+            "key": data.key,
+            "amount": data.amount, 
+            "currency": data.currency,
+            "name": "The Tarzan Way Payment Portal",
+            "description": data.description,
+            "image": "https://bitbucket.org/account/thetarzanway/avatar/256/?ts=1555263480",
+            "order_id": data.order_id,
+            "handler": function (response){
+                //alert(JSON.stringify(response));
+                $.ajax({
+                  type: "POST",
+                  url: "http://localhost:8020/pay/capture/",
+                  data: response,
+                  success: function(data){
+                    //alert(JSON.stringify(data));
+                    if(data.status ==  "captured"){
+                        document.body.innerHTML = "<p> Payment is successful and has been verified.</p>";
+                    }
+                  },
+                  error: function(error){
+                    alert(error.statusText);
+                  }
+                    
+                });
+                //alert(JSON.stringify(response));
+            },
+            "prefill": {
+                "name": "",
+                "email": ""
+            },
+            "notes": {
+                
+            },
+            "theme": {
+                "color": "#F7E700"
+            }
+        };
+        var rzp1 = new Razorpay(options);
+        document.getElementById('rzp-button1').onclick = function(e){
+            rzp1.open();
+            e.preventDefault();
+        }
+
+        //alert(JSON.stringify(data));
+        // $('#payments').attr("data-amount",data.amount);
+        // $('#payments').attr("data-order_id",data.order_id);
+        // $('#payments').attr("data-key",data.key);
+        // $('#payments').attr("data-currency",data.currency);
+
+      },
+      error: function(data){
+        document.getElementById("doc").innerHTML = data.responseText;
+      }
+
+    }); //AJAX call over
+
+});
+</script>
+
+<button id="rzp-button1">Pay</button>
+
+</head>
+<body>
+<!--
+<form method="POST" action="https://api.razorpay.com/v1/checkout/embedded">
+  <input type="hidden" id="key_id" name="key_id" value="">
+  <input type="hidden" id="order_id" name="order_id" value="">
+  <input type="hidden" id="amount" name="amount" value="">
+  <input type="hidden" id="currency" name="currency" value="">  
+  <input type="hidden" name="name" value="The Tarzan Way Payment Portal">
+  <input type="hidden" name="description" value="Test Txn with RazorPay">
+  <input type="hidden" name="prefill[name]" value="">
+  <input type="hidden" name="prefill[contact]" value="">
+  <input type="hidden" name="prefill[email]" value="">
+  <input type="hidden" name="notes[shipping address]" value="L-16, The Business Centre, 61 Wellfield Road, New Delhi - 110001">
+  <input type="hidden" name="callback_url" value="https://example.com/payment-callback">
+<input type="hidden" name="cancel_url" value="https://example.com/payment-cancel">
+  <button>Submit</button>
+</form>
+-->
+</body>
+</html>
